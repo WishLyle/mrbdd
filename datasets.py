@@ -50,14 +50,7 @@ class CT2(torch.utils.data.Dataset):
         for index, row in data_df.iterrows():
             self.images.append(row['path'])
             self.labels.append(row['label'])
-            race = row['race']
-            if race == 'WHITE':
-                race_label = 0
-            elif race == 'BLACK/AFRICAN AMERICAN':
-                race_label = 1
-            else:
-                race_label = 2
-            self.races.append(race_label)
+            self.races.append(row['race'])
 
     def __len__(self):
         return len(self.images)

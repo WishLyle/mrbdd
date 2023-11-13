@@ -21,15 +21,14 @@ import datetime
 class learner():
     def __init__(self, args):
         self.args = args
-        self.train_df, self.test_df, self.white_test_df, self.black_test_df, self.asian_test_df = utils.get_dataframe(
-            args)
+        self.train_df, self.test_df, self.white_test_df, self.other_test_df = utils.get_dataframe(args)
         self.data_path = args.data_path
         self.batch_size = args.batch_size
         self.num_workers = args.num_workers
-        self.device = "cuda:{}".format(args.device)
-        self.train_loader, self.test_loader, self.w_loader, self.b_loader, self.a_loader = None, None, None, None, None
+        self.device = "cuda:{}".format(args.device) if args.device != -1 else 'cpu'
+        self.train_loader, self.test_loader, self.w_loader, self.o_loader = None, None, None, None
         self.disease = args.disease
-        self.w_a, self.b_a, self.a_a, self.all_a, self.e_a = None, None, None, None, None
+        self.w_a, self.o_a, self.all_a, self.e_a = None, None, None, None
         save_dir, save_name = None, None
         self.train_set = None
         if args.model == 1:
@@ -49,41 +48,26 @@ class learner():
             train_dataset = get_dataset('CT', self.train_df, self.data_path, 'train')
             val_dataset = get_dataset('CT', self.test_df, self.data_path, 'val')
             w_dataset = get_dataset('CT', self.white_test_df, self.data_path, 'test')
-            b_dataset = get_dataset('CT', self.black_test_df, self.data_path, 'test')
-            a_dataset = get_dataset('CT', self.asian_test_df, self.data_path, 'test')
-            self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True,
-                                                            num_workers=self.num_workers, pin_memory=True)
-            self.val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=self.batch_size, shuffle=True,
-                                                          num_workers=self.num_workers, pin_memory=True)
-            self.w_loader = torch.utils.data.DataLoader(w_dataset, batch_size=self.batch_size, shuffle=True,
-                                                        num_workers=self.num_workers, pin_memory=True)
-            self.b_loader = torch.utils.data.DataLoader(b_dataset, batch_size=self.batch_size, shuffle=True,
-                                                        num_workers=self.num_workers, pin_memory=True)
-            self.a_loader = torch.utils.data.DataLoader(a_dataset, batch_size=self.batch_size, shuffle=True,
-                                                        num_workers=self.num_workers, pin_memory=True)
+            o_dataset = get_dataset('CT', self.other_test_df, self.data_path, 'test')
+
+
 
         else:
+
             train_dataset = get_dataset('CT2', self.train_df, self.data_path, 'train')
             val_dataset = get_dataset('CT2', self.test_df, self.data_path, 'val')
             self.train_set = train_dataset
-            self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True,
-                                                            num_workers=self.num_workers, pin_memory=True)
-            self.val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=self.batch_size, shuffle=True,
-                                                          num_workers=self.num_workers, pin_memory=True)
             w_dataset = get_dataset('CT2', self.white_test_df, self.data_path, 'test')
-            b_dataset = get_dataset('CT2', self.black_test_df, self.data_path, 'test')
-            a_dataset = get_dataset('CT2', self.asian_test_df, self.data_path, 'test')
-            self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True,
-                                                            num_workers=self.num_workers, pin_memory=True)
-            self.val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=self.batch_size, shuffle=True,
-                                                          num_workers=self.num_workers, pin_memory=True)
-            self.w_loader = torch.utils.data.DataLoader(w_dataset, batch_size=self.batch_size, shuffle=True,
-                                                        num_workers=self.num_workers, pin_memory=True)
-            self.b_loader = torch.utils.data.DataLoader(b_dataset, batch_size=self.batch_size, shuffle=True,
-                                                        num_workers=self.num_workers, pin_memory=True)
-            self.a_loader = torch.utils.data.DataLoader(a_dataset, batch_size=self.batch_size, shuffle=True,
-                                                        num_workers=self.num_workers, pin_memory=True)
+            o_dataset = get_dataset('CT2', self.other_test_df, self.data_path, 'test')
 
+        self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True,
+                                                        num_workers=self.num_workers, pin_memory=True)
+        self.val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=self.batch_size, shuffle=True,
+                                                      num_workers=self.num_workers, pin_memory=True)
+        self.w_loader = torch.utils.data.DataLoader(w_dataset, batch_size=self.batch_size, shuffle=True,
+                                                    num_workers=self.num_workers, pin_memory=True)
+        self.o_loader = torch.utils.data.DataLoader(o_dataset, batch_size=self.batch_size, shuffle=True,
+                                                    num_workers=self.num_workers, pin_memory=True)
         # TensorBoardX
         if args.tensorboard == 1:
             self.writer = tensorboardX.SummaryWriter(f'result/summary/{args.exp_name}/{args.disease}')
@@ -105,10 +89,8 @@ class learner():
             test_loader = self.val_loader
         elif key == 'w':
             test_loader = self.w_loader
-        elif key == 'b':
-            test_loader = self.b_loader
-        elif key == 'a':
-            test_loader = self.a_loader
+        elif key == 'o':
+            test_loader = self.o_loader
 
         ground_truth = []
         predict_score = []
@@ -136,10 +118,8 @@ class learner():
             self.all_a = test_accurate
         elif key == 'w':
             self.w_a = test_accurate
-        elif key == 'b':
-            self.b_a = test_accurate
-        elif key == 'a':
-            self.a_a = test_accurate
+        elif key == 'o':
+            self.o_a = test_accurate
 
         with open(self.result_save_path, 'a+') as file:
             sys.stdout = file
@@ -152,8 +132,6 @@ class learner():
                 print("[ {} ][ accurate , roc_auc ]= [ {:6f} , {:6f} ]".format('e', float(self.e_a), float(0.000000)))
         sys.stdout = sys.__stdout__
 
-    # 写一起还是分开？
-    # 建议分开，然后调用
 
     def train_basic(self):
         steps = 0
@@ -226,15 +204,15 @@ class learner():
         date_string = now.strftime("%Y-%m-%d %H:%M")
         self.write_result("Time [ {} ]  Disease [  {}  ]  ".format(date_string, self.disease))
         self.test_basic(save_path, 'w')
-        self.test_basic(save_path, 'b')
-        self.test_basic(save_path, 'a')
-        self.e_a = (self.b_a + self.w_a + self.a_a) / 3.0
+        self.test_basic(save_path, 'o')
+
+        self.e_a = (self.o_a + self.w_a) / 2.0
         self.test_basic(save_path, 'all')
         self.write_result('-\n')
 
     def test_debias(self, path_name, key):
         device = self.device
-        model = models.ResNet34(num_classes=3).to(device)
+        model = models.ResNet34(num_classes=2).to(device)
         model.load_state_dict(torch.load(path_name))
         model.eval()
 
@@ -243,10 +221,8 @@ class learner():
             test_loader = self.val_loader
         elif key == 'w':
             test_loader = self.w_loader
-        elif key == 'b':
-            test_loader = self.b_loader
-        elif key == 'a':
-            test_loader = self.a_loader
+        elif key == 'o':
+            test_loader = self.o_loader
 
         ground_truth = []
         predict_score = []
@@ -277,10 +253,8 @@ class learner():
             self.all_a = test_accurate
         elif key == 'w':
             self.w_a = test_accurate
-        elif key == 'b':
-            self.b_a = test_accurate
-        elif key == 'a':
-            self.a_a = test_accurate
+        elif key == 'o':
+            self.o_a = test_accurate
 
         with open(self.result_save_path, 'a+') as file:
             sys.stdout = file
@@ -304,24 +278,24 @@ class learner():
 
         save_dir = r'./checkpoints/debias/'
         utils.make_dir(save_dir)
-        save_name_1 = str(self.args.exp_name)+'Best' + '_' + str(self.disease) + '_' + 'model2-1'
-        save_name_2 = str(self.args.exp_name)+'Best' + '_' + str(self.disease) + '_' + 'model2-2'
+        save_name_1 = str(self.args.exp_name) + 'Best' + '_' + str(self.disease) + '_' + 'model2-1'
+        save_name_2 = str(self.args.exp_name) + 'Best' + '_' + str(self.disease) + '_' + 'model2-2'
         save_path_1 = save_dir + save_name_1 + r'.pth'
         save_path_2 = save_dir + save_name_2 + r'.pth'
 
         # sample loss ema
         # print(self.train_set[-1])
-        sl_b = utils.EMA(torch.LongTensor(self.train_set.races[:]), num_classes=3, alpha=self.args.ema_alpha)
-        sl_i = utils.EMA(torch.LongTensor(self.train_set.races[:]), num_classes=3, alpha=self.args.ema_alpha)
+        sl_b = utils.EMA(torch.LongTensor(self.train_set.races[:]), num_classes=2, alpha=self.args.ema_alpha)
+        sl_i = utils.EMA(torch.LongTensor(self.train_set.races[:]), num_classes=2, alpha=self.args.ema_alpha)
 
-        model_b = models.ResNet34(num_classes=3).to(device)
-        model_i = models.ResNet34(num_classes=3).to(device)
+        model_b = models.ResNet34(num_classes=2).to(device)
+        model_i = models.ResNet34(num_classes=2).to(device)
 
         CE = nn.CrossEntropyLoss(reduction='none')
         GCE = utils.GeneralizedCELoss()
 
         optimizer_b = optim.Adam(model_b.parameters(), lr=lr, weight_decay=weight_decay)
-        optimizer_i = optim.Adam(model_b.parameters(), lr=lr, weight_decay=weight_decay)
+        optimizer_i = optim.Adam(model_i.parameters(), lr=lr, weight_decay=weight_decay)
 
         scheduler_b = optim.lr_scheduler.MultiStepLR(optimizer_b, milestones=self.args.mile_d, gamma=0.1)
         scheduler_i = optim.lr_scheduler.MultiStepLR(optimizer_i, milestones=self.args.mile_r, gamma=0.1)
@@ -357,12 +331,16 @@ class learner():
                 ldc = CE(pred_c, race).detach()
 
                 pred_d = model_b.d_fc(f_b)
-
+                pred_r = model_i.r2_fc(f_i)
                 lambda_d = 0
-
+                lambda_r = 0.0
                 if epoch > self.args.swap_epoch:
                     lambda_d = self.args.lambda_d
+                    lambda_r = 0
+
                 ldd = CE(pred_d, label)
+
+                ldr = CE(pred_r, race)
 
                 # class-wise normalize
                 sl_i.update(lda, index)
@@ -371,7 +349,7 @@ class learner():
                 ldc = sl_b.parameter[index].clone().detach()
                 lda = lda.to(device)
                 ldc = ldc.to(device)
-                for c in range(3):
+                for c in range(2):
                     class_index = torch.where(race == c)[0].to(self.device)
                     max_loss_align = sl_i.max_loss(c)
                     max_loss_conflict = sl_b.max_loss(c)
@@ -383,7 +361,7 @@ class learner():
                 ldc = GCE(pred_c, race)
 
                 loss_dis = lda.mean() + ldc.mean()
-                loss = loss_dis + ldd.mean() * lambda_d
+                loss = loss_dis + ldd.mean() * lambda_d + ldr.mean() * lambda_r
 
                 # lsa : loss_swap_align
                 # lsc : loss_swap_conflict
@@ -432,6 +410,7 @@ class learner():
             model_i.eval()
 
             acc = torch.zeros(1).to(device)
+            acc2 = torch.zeros(1).to(device)
             val_num = torch.zeros(1).to(device)
             with torch.no_grad():
                 val_bar = tqdm(self.val_loader, file=sys.stdout)
@@ -442,12 +421,19 @@ class learner():
                     pred_d = model_b.d_fc(f_b)
                     predict_y = torch.max(pred_d, dim=1)[1]
                     acc += torch.eq(predict_y, val_labels.to(device)).sum().item()
+
+                    f_i = model_i.extract(val_images)
+                    pred_r = model_i.r2_fc(f_i)
+                    predict_r = torch.max(pred_r, dim=1)[1]
+                    acc2 += torch.eq(predict_r, val_races.to(device)).sum().item()
+
                     val_num += len(predict_y)
                     val_bar.desc = "valid epoch[{}/{}]".format(epoch + 1,
                                                                epochs)
             val_accurate = acc / val_num
-            print('[epoch %d] train_loss: %.5f  val_accuracy: %.5f' %
-                  (epoch + 1, running_loss / train_steps, val_accurate))
+            race_acc = acc2 / val_num
+            print('[epoch %d] train_loss: %.5f  val_acc: %.5f val_acc2: %.5f' %
+                  (epoch + 1, running_loss / train_steps, val_accurate, race_acc))
 
             if val_accurate > best_acc:
                 best_acc = val_accurate
@@ -461,12 +447,12 @@ class learner():
         date_string = now.strftime("%Y-%m-%d %H:%M")
         self.write_result("Time [ {} ]  Disease [  {}  ]  ".format(date_string, self.disease))
         self.test_debias(save_path_2, 'w')
-        self.test_debias(save_path_2, 'b')
-        self.test_debias(save_path_2, 'a')
-        self.e_a = (self.b_a + self.w_a + self.a_a) / 3.0
+        self.test_debias(save_path_2, 'o')
+        self.e_a = (self.w_a + self.o_a) / 2.0
         self.test_debias(save_path_2, 'all')
         self.write_result('-\n')
 
+# race claasification
     def test_race(self, path_name):
         device = self.device
         model = models.ResNet34(num_classes=3).to(device)
@@ -495,7 +481,7 @@ class learner():
 
         test_accurate = ac / test_num
         roc_auc = roc_auc_score(ground_truth, predict_score, multi_class='ovr')
-        #fpr, tpr, thresholds = roc_curve(ground_truth, predict_score, multi_class='ovr')
+        # fpr, tpr, thresholds = roc_curve(ground_truth, predict_score, multi_class='ovr')
 
         with open(self.result_save_path, 'a+') as file:
             sys.stdout = file

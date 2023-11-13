@@ -28,9 +28,9 @@ def setup_seed(seed):
 setup_seed(2023921)
 
 parser = argparse.ArgumentParser(description='test')
-parser.add_argument('--model', type=int, default=3, help='1 for base,2 for debias,3 for race')
+parser.add_argument('--model', type=int, default=2, help='1 for base,2 for debias,3 for race')
 parser.add_argument('--disease', default='Pneumothorax', help='disease')
-parser.add_argument('--epochs', type=int, default=100, help='disease')
+parser.add_argument('--epochs', type=int, default=5, help='disease')
 parser.add_argument('--data_path', default=r'/lxw/mimic/output/physionet.org/files/mimic-cxr-jpg/2.0.0/files/',
                     help=r'eg:..\files')
 parser.add_argument('--train_mode', default='all',
@@ -47,14 +47,14 @@ parser.add_argument("--lambda_swap_align", help="lambda_swap_b in Eq.3", type=fl
 parser.add_argument("--lambda_swap", help="lambda swap (lambda_swap in Eq.4)", type=float, default=1.0)
 
 
-parser.add_argument('--exp_name', default='debug-race')
+parser.add_argument('--exp_name', default='debug-vanilla')
 parser.add_argument('--tensorboard', type=int, default=1)
 parser.add_argument('--device', type=int, default=5)
 parser.add_argument('--ema_alpha', type=float, default=0.7)
 parser.add_argument('--swap_epoch', type=int, default=45)
 parser.add_argument('--lambda_d', type=float, default=0.7)
-parser.add_argument('--mile_d', default=[75])
-parser.add_argument('--mile_r', default=[40])
+parser.add_argument('--mile_d', default=[40])
+parser.add_argument('--mile_r', default=[75])
 parser.add_argument('--seed', type=int, default=2023921)
 args = parser.parse_args()
 
